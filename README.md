@@ -9,7 +9,7 @@ API Node.js/Express para criar pedidos manualmente na **única conta Olist ERP v
 - rota manual protegida por `Bearer POC_API_KEY`;
 - idempotência local por `externalOrderNumber`;
 - sem PII no banco: a auditoria guarda somente referências operacionais e códigos de erro;
-- tokens exclusivamente em variáveis de ambiente;
+- tokens OAuth cifrados e persistidos no Neon;
 - modo de simulação por padrão.
 
 ## Configuração
@@ -23,15 +23,13 @@ No `.env` (ou em **Vercel → Settings → Environment Variables**), configure:
 
 ```dotenv
 DATABASE_URL="postgresql://..."
-POC_API_KEY="segredo-da-rota-manual"
-WEBHOOK_SECRET="segredo-webhook"
-CRON_SECRET="segredo-cron"
+POC_API_KEY="chave-do-painel-e-da-api-manual"
+OLIST_CLIENT_ID="..."
+OLIST_CLIENT_SECRET="..."
+OLIST_REDIRECT_URI="https://SEU-DOMINIO.vercel.app/api/olist/callback"
+TOKEN_ENCRYPTION_KEY="chave-base64url-de-32-bytes"
 OLIST_SIMULATE=true
-OLIST_ACCESS_TOKEN="token-oauth-da-olist"
-# OLIST_ECOMMERCE_ID=0  # opcional
 ```
-
-`DATABASE_URL` é o nome recomendado. `MILLU_DATABASE_URL` é aceito temporariamente apenas por compatibilidade.
 
 ### OAuth Olist persistente
 
@@ -107,8 +105,6 @@ O backend envia `POST https://api.tiny.com.br/public-api/v3/pedidos` com o contr
 |---|---|---|
 | `GET /api/health` | Pública | Health check |
 | `POST /api/orders` | `Bearer POC_API_KEY` | Criação manual de pedido Olist v3 |
-| `POST /api/webhooks/tray` | HMAC | Entrada futura da Tray, com o mesmo schema manual temporariamente |
-| `GET /api/cron/cleanup` | `Bearer CRON_SECRET` | Limpeza de retenção |
 
 ## Ativar produção
 

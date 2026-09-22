@@ -3,12 +3,12 @@ import * as helmetModule from 'helmet';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { cleanupOldOrders, getAuditOrder, getAuditSummary, listAuditOrders } from './db.js';
+import { getAuditOrder, getAuditSummary, listAuditOrders } from './db.js';
 import { completeOlistAuthorization, createOlistAuthorizationUrl, getOlistOAuthStatus } from './oauth.js';
 import { processOrder } from './order-service.js';
 import { RoutingError } from './routing.js';
 import { orderSchema } from './schemas.js';
-import { inMemoryRateLimit, requireBearer, verifyWebhookSignature } from './security.js';
+import { inMemoryRateLimit, requireBearer } from './security.js';
 
 // O builder da Vercel pode resolver Helmet como CommonJS; normalize o export ESM/CJS.
 const helmet = (helmetModule as unknown as { default?: (options?: unknown) => RequestHandler }).default
@@ -21,7 +21,7 @@ export const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
-app.use(express.json({ limit: '100kb', verify: (req, _res, buffer) => { (req as Request & { rawBody?: Buffer }).rawBody = buffer; } }));
+app.use(express.json({ limit: '100kb' }));
 
 const healthResponse = () => ({ status: 'ok', service: 'millu-engine', mode: config.simulateOlist ? 'simulation' : 'olist-live' });
 app.get('/api/health', (_req, res) => res.status(200).json(healthResponse()));
@@ -92,24 +92,6 @@ app.post('/api/orders', ...protectedOrderRoute, async (req, res, next) => {
       warehouseId: result.order.warehouse_id,
       olistOrderId: result.order.olist_order_id,
     });
-  } catch (error) { return next(error); }
-});
-
-// Adaptador genérico da POC. Antes de produção, valide o header e payload oficiais da Tray.
-app.post('/api/webhooks/tray', inMemoryRateLimit(60), verifyWebhookSignature, async (req, res, next) => {
-  try {
-    const input = orderSchema.parse(req.body);
-    const result = await processOrder(input);
-    return res.status(result.duplicate ? 202 : 201).json({ accepted: true, duplicate: result.duplicate, status: result.order.status });
-  } catch (error) { return next(error); }
-});
-
-app.get('/api/cron/cleanup', requireBearer(() => config.cronSecret), async (_req, res, next) => {
-  try {
-    const cutoff = new Date();
-    cutoff.setUTCDate(cutoff.getUTCDate() - config.retentionDays);
-    const deleted = await cleanupOldOrders(cutoff);
-    return res.status(200).json({ deleted, retentionDays: config.retentionDays });
   } catch (error) { return next(error); }
 });
 

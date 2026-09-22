@@ -1,6 +1,5 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
-import { config } from './config.js';
 
 export const sha256 = (input: string) => createHash('sha256').update(input).digest('hex');
 
@@ -17,19 +16,6 @@ export function requireBearer(expected: () => string | undefined) {
     if (!matchesSecret(token, expected())) return res.status(401).json({ error: 'Não autorizado.' });
     return next();
   };
-}
-
-export function verifyWebhookSignature(req: Request, res: Response, next: NextFunction) {
-  const secret = config.webhookSecret;
-  const signature = req.header('x-millu-signature');
-  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
-
-  if (!secret || !signature || !rawBody) return res.status(401).json({ error: 'Webhook não autorizado.' });
-
-  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-  if (!matchesSecret(signature, expected)) return res.status(401).json({ error: 'Webhook não autorizado.' });
-
-  return next();
 }
 
 export function inMemoryRateLimit(limit = 30, windowMs = 60_000) {

@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "express",
-  "buildCommand": "npm run db:migrate:vercel",
-  "crons": [
-    { "path": "/api/cron/cleanup", "schedule": "0 3 * * *" }
-  ]
+  "buildCommand": "npm run db:migrate:vercel"
 }

@@ -158,9 +158,3 @@ export async function getOlistOAuthCredentials(): Promise<StoredOlistOAuthCreden
     LIMIT 1`) as unknown as StoredOlistOAuthCredentials[];
   return rows[0] ?? null;
 }
-
-export async function cleanupOldOrders(cutoff: Date): Promise<number> {
-  const sql = client();
-  const rows = await sql`DELETE FROM automation_orders WHERE created_at < ${cutoff.toISOString()} RETURNING id`;
-  return rows.length;
-}

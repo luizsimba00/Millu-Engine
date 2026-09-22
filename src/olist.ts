@@ -8,21 +8,8 @@ export { OlistError } from './olist-error.js';
 export type OlistCreateResult = { simulated: boolean; olistOrderId?: string; olistOrderNumber?: string };
 
 async function getAccessToken(): Promise<string> {
-  // No modo OAuth web, o token fica cifrado no Neon e é renovado automaticamente.
-  if (config.olist.clientId && config.olist.clientSecret && config.olist.redirectUri && process.env.TOKEN_ENCRYPTION_KEY) {
-    return getPersistedOlistAccessToken();
-  }
-
-  // Alternativa para ambientes que já renovam tokens fora do Millu Engine.
-  if (config.olist.accessToken) return config.olist.accessToken;
-  if (!config.olist.clientId || !config.olist.clientSecret || !config.olist.refreshToken) throw new OlistError('olist_access_token_missing');
-
-  const body = new URLSearchParams({ grant_type: 'refresh_token', client_id: config.olist.clientId, client_secret: config.olist.clientSecret, refresh_token: config.olist.refreshToken });
-  const response = await fetch(config.olist.authUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body });
-  if (!response.ok) throw new OlistError(`olist_auth_http_${response.status}`);
-  const token = await response.json() as { access_token?: string };
-  if (!token.access_token) throw new OlistError('olist_auth_invalid_response');
-  return token.access_token;
+  // O único fluxo suportado é OAuth persistente: token cifrado no Neon e renovação automática.
+  return getPersistedOlistAccessToken();
 }
 
 /** Cria um pedido manual usando o contrato público Olist ERP v3: POST /pedidos. */
@@ -37,7 +24,6 @@ export async function createOlistOrder(order: OrderInput): Promise<OlistCreateRe
       quantidade: order.quantity,
       valorUnitario: order.unitPrice,
     }],
-    ...(config.olist.ecommerceId > 0 ? { ecommerce: { id: config.olist.ecommerceId, numeroPedidoEcommerce: order.externalOrderNumber } } : {}),
     observacoesInternas: [
       `Millu Engine | Pedido manual externo: ${order.externalOrderNumber}`,
       order.internalNotes,

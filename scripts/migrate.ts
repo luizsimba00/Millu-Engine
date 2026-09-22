@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { neon } from '@neondatabase/serverless';
 
-const databaseUrl = process.env.DATABASE_URL ?? process.env.MILLU_DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL não foi configurada.');
 
 const sql = neon(databaseUrl);
@@ -12,6 +12,12 @@ const files = (await readdir(migrationDirectory)).filter((file) => /^\d+_.+\.sql
 
 for (const file of files) {
   const migration = await readFile(resolve(migrationDirectory, file), 'utf8');
-  await sql.query(migration);
+  // A API HTTP do Neon aceita somente uma instrução por prepared statement.
+  const statements = migration
+    .split(/;\s*(?:\r?\n|$)/u)
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+
+  for (const statement of statements) await sql.query(statement);
   console.log(`Migration ${file} aplicada com sucesso.`);
 }
