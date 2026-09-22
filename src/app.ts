@@ -1,5 +1,10 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
-import helmet from 'helmet';
+import * as helmetModule from 'helmet';
+import type { RequestHandler } from 'express';
+
+// O builder da Vercel pode resolver Helmet como CommonJS; normalize o export ESM/CJS.
+const helmet = (helmetModule as unknown as { default?: (options?: unknown) => RequestHandler }).default
+  ?? (helmetModule as unknown as (options?: unknown) => RequestHandler);
 import { config } from './config.js';
 import { cleanupOldOrders } from './db.js';
 import { processOrder } from './order-service.js';
