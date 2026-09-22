@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07111f" />
   <title>Millu Engine | Central de Operações</title>
-  <link rel="stylesheet" href="/styles.css?v=5" />
+  <link rel="stylesheet" href="/styles.css?v=9" />
   <style>
     /* Salvaguarda contra artefatos de composição em alguns navegadores. */
     .metric-card { background: #0d2034 !important; animation: none !important; transform: none !important; }
@@ -34,8 +34,8 @@
 
       <section id="command" class="view active-view">
         <div class="hero">
-          <div><p class="eyebrow">MILLU ENGINE / v0.1</p><h1>Orquestração que<br><em>não perde o sinal.</em></h1><p class="intro">Acompanhe o roteamento de cada pedido entre a origem, a regra de SKU e a operação Olist.</p></div>
-          <div class="token-box"><label for="api-token">CHAVE DE OPERAÇÃO</label><div class="token-input"><input id="api-token" type="password" autocomplete="off" placeholder="POC_API_KEY" /><button id="token-toggle" aria-label="Mostrar chave">◉</button></div><button id="connect" class="outline-button">CONECTAR PAINEL</button><small>A chave permanece somente neste navegador.</small></div>
+          <div><p class="eyebrow">MILLU ENGINE / v0.1</p><h1>Orquestração que<br><em>não perde o sinal.</em></h1><p class="intro">Acompanhe a consulta na Tray, a decisão do Router e a criação centralizada de pedidos no Olist ERP.</p></div>
+          <div class="token-box"><label for="api-token">CHAVE DE OPERAÇÃO</label><div class="token-input"><input id="api-token" type="password" autocomplete="off" placeholder="POC_API_KEY" /><button id="token-toggle" aria-label="Mostrar chave">◉</button></div><button id="connect" class="outline-button">CONECTAR PAINEL</button><div class="token-actions"><button id="connect" class="outline-button">CONECTAR PAINEL</button><button id="connect-olist" class="outline-button secondary">CONECTAR OLIST</button></div><small>A chave permanece somente neste navegador.</small></div>
         </div>
         <div class="metric-grid" id="metrics">
           <article class="metric-card"><span>TOTAL PROCESSADO</span><strong>—</strong><small>Pedidos auditáveis</small></article>
@@ -53,16 +53,14 @@
           <span class="signal-orbit orbit-1" aria-hidden="true"></span><span class="signal-orbit orbit-2" aria-hidden="true"></span><span class="signal-orbit orbit-3" aria-hidden="true"></span>
           <svg class="network-routes" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">
             <defs><linearGradient id="route-cyan" x1="0" x2="1"><stop stop-color="#42e7e1"/><stop offset="1" stop-color="#a98bff"/></linearGradient><linearGradient id="route-green" x1="0" x2="1"><stop stop-color="#a98bff"/><stop offset="1" stop-color="#78e3a5"/></linearGradient></defs>
-            <path id="route-in" d="M225 252 L400 228"/><path id="route-a" d="M620 235 L700 130"/><path id="route-b" d="M620 250 L700 360"/><path id="route-olist" d="M508 280 L508 350"/>
-            <path class="route route-in" d="M225 252 L400 228"/><path class="route route-a" d="M620 235 L700 130"/><path class="route route-b" d="M620 250 L700 360"/><path class="route route-olist" d="M508 280 L508 350"/>
+            <path id="route-in" d="M225 252 L400 228"/><path id="route-olist" d="M565 240 L755 240"/>
+            <path class="route route-in" d="M225 252 L400 228"/><path class="route route-olist" d="M565 240 L755 240"/>
           </svg>
           <button class="flow-node origin selected" data-filter=""><span class="node-icon">▣</span><b>Tray</b><small>Consulta de pedido</small></button>
           <button class="flow-node routing" data-filter="processing"><span class="node-icon">◇</span><b>Router</b><small>Decisão de roteamento</small></button>
-          <button class="flow-node company-a" data-filter="simulated"><span class="node-icon">M</span><b>Olist Millu</b><small>Canal de destino</small></button>
-          <button class="flow-node company-b" data-filter="created"><span class="node-icon">S</span><b>Olist Spot</b><small>Canal de destino</small></button>
-          <button class="flow-node olist" data-filter=""><span class="node-icon">A</span><b>Olist Agr</b><small>Canal de destino</small></button>
+          <button class="flow-node olist" data-filter=""><span class="node-icon">O</span><b>Olist ERP</b><small>Criação centralizada</small></button>
         </div>
-        <div class="flow-legend"><span><i class="dot cyan"></i> Consulta Tray</span><span><i class="dot violet"></i> Decisão do Router</span><span><i class="dot green"></i> Canais Olist</span></div>
+        <div class="flow-legend"><span><i class="dot cyan"></i> Consulta Tray</span><span><i class="dot violet"></i> Decisão do Router</span><span><i class="dot green"></i> Criação no Olist ERP</span></div>
       </section>
 
       <section id="audit" class="view">
@@ -73,6 +71,6 @@
     </main>
   </div>
   <div id="toast" role="status"></div>
-  <script type="module" src="/app.js?v=2"></script>
+  <script type="module" src="/app.js?v=6"></script>
 </body>
 </html>

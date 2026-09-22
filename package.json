@@ -11,6 +11,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:migrate:vercel": "tsx scripts/migrate-on-vercel.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

@@ -1,20 +1,24 @@
 import { claimOrder, findOrder, markOrder, type StoredOrder } from './db.js';
 import { createOlistOrder, OlistError } from './olist.js';
-import { routeSku } from './routing.js';
 import type { OrderInput } from './schemas.js';
 import { sha256 } from './security.js';
 
+/**
+ * Envia um pedido manual à única conta Olist configurada.
+ * externalOrderNumber é a chave de idempotência local: nunca cria duas tentativas simultâneas.
+ */
 export async function processOrder(input: OrderInput): Promise<{ duplicate: boolean; order: StoredOrder }> {
-  const route = routeSku(input.sku);
-  const requestHash = sha256(JSON.stringify({ ...input, sku: input.sku.trim().toUpperCase() }));
+  const requestHash = sha256(JSON.stringify(input));
   const claimed = await claimOrder({
-    ...input,
-    sku: input.sku.trim().toUpperCase(),
+    externalOrderNumber: input.externalOrderNumber,
+    sku: String(input.productId),
+    quantity: input.quantity,
+    unitPrice: input.unitPrice,
     requestHash,
-    targetCompany: route.company.key,
-    targetCompanyName: route.company.name,
-    warehouseId: route.company.warehouseId,
-    routingRule: route.ruleKey,
+    targetCompany: 'olist',
+    targetCompanyName: 'Olist',
+    warehouseId: input.warehouseId,
+    routingRule: 'manual_olist_v3',
   });
 
   if (!claimed) {
@@ -24,7 +28,7 @@ export async function processOrder(input: OrderInput): Promise<{ duplicate: bool
   }
 
   try {
-    const result = await createOlistOrder(route.company, input);
+    const result = await createOlistOrder(input);
     const status = result.simulated ? 'simulated' : 'created';
     await markOrder(claimed.id, status, result.olistOrderId);
     return { duplicate: false, order: { ...claimed, status, olist_order_id: result.olistOrderId ?? null } };

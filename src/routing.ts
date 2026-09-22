@@ -1,16 +1,3 @@
-import { config, type CompanyConfig } from './config.js';
-
-export type RouteDecision = { ruleKey: string; company: CompanyConfig };
-
+// Mantido como ponto de extensão para regras futuras da Tray.
+// A criação manual atual envia tudo para uma única conta Olist configurada.
 export class RoutingError extends Error {}
-
-export function routeSku(sku: string): RouteDecision {
-  const normalizedSku = sku.trim().toUpperCase();
-  const route = config.routes.find((item) => normalizedSku.startsWith(item.prefix));
-
-  if (!route) {
-    throw new RoutingError('Nenhuma regra de roteamento foi encontrada para este SKU.');
-  }
-
-  return { ruleKey: route.key, company: route.company };
-}

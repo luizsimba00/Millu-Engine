@@ -5,7 +5,7 @@ const statusLabels = { processing: 'Processando', simulated: 'Simulado', created
 
 tokenInput.value = state.token;
 function toast(message) { const item = $('#toast'); item.textContent = message; item.classList.add('show'); setTimeout(() => item.classList.remove('show'), 3200); }
-function api(path) { return fetch(path, { headers: { Authorization: `Bearer ${state.token}` } }); }
+function api(path, options = {}) { return fetch(path, { ...options, headers: { ...options.headers, Authorization: `Bearer ${state.token}` } }); }
 function localDate(value) { return value ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : '—'; }
 function escapeHTML(value) { return String(value ?? '—').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
 
@@ -34,15 +34,69 @@ async function inspectOrder(id) {
   const { order } = await response.json(); state.selectedId = id; renderOrders();
   $('#detail-panel').innerHTML = `<p class="eyebrow">TRILHA DE EXECUÇÃO</p><h3>${escapeHTML(order.external_order_number)}</h3><div class="detail-list"><div><span>STATUS</span><b><span class="status ${order.status}">${statusLabels[order.status] || order.status}</span></b></div><div><span>SKU / QUANTIDADE</span><b>${escapeHTML(order.sku)} · ${order.quantity} un.</b></div><div><span>REGRA APLICADA</span><b>${escapeHTML(order.routing_rule)}</b></div><div><span>DESTINO</span><b>${escapeHTML(order.target_company_name)} · Depósito ${escapeHTML(order.warehouse_id)}</b></div><div><span>ID OLIST</span><b>${escapeHTML(order.olist_order_id)}</b></div>${order.error_code ? `<div><span>FALHA REPORTADA</span><b>${escapeHTML(order.error_code)}</b></div>` : ''}</div><div class="timeline">RECEBIDO · ${localDate(order.created_at)}<br>PROCESSADO · ${localDate(order.processed_at)}<br>REGISTRO #${escapeHTML(order.id)}</div>`;
 }
-function syncRoutes() { const map = $('.flow-map'); if (!map || map.offsetParent === null) return; const rect = map.getBoundingClientRect(); $('.network-routes').setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`); const point = (selector, side) => { const node = $(selector).getBoundingClientRect(); const x = side === 'left' ? node.left : side === 'right' ? node.right : node.left + node.width / 2; const y = side === 'top' ? node.top : side === 'bottom' ? node.bottom : node.top + node.height / 2; return [x - rect.left, y - rect.top]; }; const setRoute = (name, start, end) => document.querySelectorAll(`#route-${name}, .route-${name}`).forEach(path => path.setAttribute('d', `M${start[0]} ${start[1]} L${end[0]} ${end[1]}`)); setRoute('in', point('.origin', 'right'), point('.routing', 'left')); setRoute('a', point('.routing', 'right'), point('.company-a', 'left')); setRoute('b', point('.routing', 'right'), point('.company-b', 'left')); setRoute('olist', point('.routing', 'bottom'), point('.olist', 'top')); }
+function syncRoutes() { const map = $('.flow-map'); if (!map || map.offsetParent === null) return; const rect = map.getBoundingClientRect(); $('.network-routes').setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`); const point = (selector, side) => { const node = $(selector).getBoundingClientRect(); const x = side === 'left' ? node.left : side === 'right' ? node.right : node.left + node.width / 2; const y = side === 'top' ? node.top : side === 'bottom' ? node.bottom : node.top + node.height / 2; return [x - rect.left, y - rect.top]; }; const setRoute = (name, start, end) => document.querySelectorAll(`#route-${name}, .route-${name}`).forEach(path => path.setAttribute('d', `M${start[0]} ${start[1]} L${end[0]} ${end[1]}`)); setRoute('in', point('.origin', 'right'), point('.routing', 'left')); setRoute('olist', point('.routing', 'right'), point('.olist', 'left')); }
 function showView(id, updateHash = true) { if (!document.getElementById(id)) return; document.querySelectorAll('.view').forEach(v => v.classList.toggle('active-view', v.id === id)); document.querySelectorAll('.nav-item').forEach(a => a.classList.toggle('active', a.dataset.nav === id)); $('#section-title').textContent = id === 'command' ? 'CENTRAL' : id === 'flow' ? 'FLUXO' : 'AUDITORIA'; document.querySelector('.sidebar').classList.remove('open'); if (id === 'flow') requestAnimationFrame(syncRoutes); if (updateHash && location.hash !== `#${id}`) history.pushState(null, '', `#${id}`); }
 document.querySelectorAll('[href^="#"]').forEach(link => link.addEventListener('click', event => { const id = link.getAttribute('href').slice(1); if (document.getElementById(id)) { event.preventDefault(); showView(id); } }));
 $('#connect').addEventListener('click', async () => { state.token = tokenInput.value.trim(); if (!state.token) return toast('Informe a chave de operação.'); sessionStorage.setItem('millu-api-token', state.token); try { await loadDashboard(); toast('Painel conectado com sucesso.'); } catch (error) { toast(error.message); } });
+$('#connect-olist').addEventListener('click', async () => {
+  state.token = tokenInput.value.trim();
+  if (!state.token) return toast('Informe a chave de operação antes de conectar a Olist.');
+  sessionStorage.setItem('millu-api-token', state.token);
+  const response = await api('/api/olist/login', { method: 'POST' });
+  if (!response.ok) return toast('Não foi possível iniciar a conexão com a Olist.');
+  const { authorizationUrl } = await response.json();
+  window.location.assign(authorizationUrl);
+});
 $('#token-toggle').addEventListener('click', () => tokenInput.type = tokenInput.type === 'password' ? 'text' : 'password');
 $('#refresh').addEventListener('click', async () => { try { await loadDashboard(); toast('Auditoria atualizada.'); } catch (error) { toast(error.message); } });
 $('#filters').addEventListener('click', async event => { const button = event.target.closest('.filter'); if (!button) return; state.status = button.dataset.status; document.querySelectorAll('.filter').forEach(filter => filter.classList.toggle('active', filter === button)); try { await loadDashboard(); } catch (error) { toast(error.message); } });
 let debounce; $('#search').addEventListener('input', event => { clearTimeout(debounce); debounce = setTimeout(async () => { state.query = event.target.value.trim(); try { await loadDashboard(); } catch (error) { toast(error.message); } }, 350); });
-document.querySelectorAll('.flow-node').forEach(node => node.addEventListener('click', () => { document.querySelectorAll('.flow-node').forEach(item => item.classList.toggle('selected', item === node)); state.status = node.dataset.filter; document.querySelectorAll('.filter').forEach(filter => filter.classList.toggle('active', filter.dataset.status === state.status)); showView('audit'); loadDashboard().catch(error => toast(error.message)); }));
+document.querySelectorAll('.flow-node').forEach(node => {
+  node.addEventListener('click', () => {
+    if (node.dataset.didDrag === 'true') { delete node.dataset.didDrag; return; }
+    document.querySelectorAll('.flow-node').forEach(item => item.classList.toggle('selected', item === node));
+    state.status = node.dataset.filter;
+    document.querySelectorAll('.filter').forEach(filter => filter.classList.toggle('active', filter.dataset.status === state.status));
+    showView('audit');
+    loadDashboard().catch(error => toast(error.message));
+  });
+
+  node.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    const map = $('.flow-map');
+    const mapRect = map.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const offsetX = event.clientX - nodeRect.left;
+    const offsetY = event.clientY - nodeRect.top;
+    let moved = false;
+    node.setPointerCapture(event.pointerId);
+    node.classList.add('dragging');
+
+    const move = moveEvent => {
+      const maxLeft = mapRect.width - nodeRect.width;
+      const maxTop = mapRect.height - nodeRect.height;
+      const left = Math.min(Math.max(moveEvent.clientX - mapRect.left - offsetX, 0), maxLeft);
+      const top = Math.min(Math.max(moveEvent.clientY - mapRect.top - offsetY, 0), maxTop);
+      moved ||= Math.abs(moveEvent.clientX - event.clientX) > 4 || Math.abs(moveEvent.clientY - event.clientY) > 4;
+      node.style.left = `${(left / mapRect.width) * 100}%`;
+      node.style.top = `${(top / mapRect.height) * 100}%`;
+      node.style.right = 'auto';
+      node.style.bottom = 'auto';
+      syncRoutes();
+    };
+    const finish = () => {
+      node.classList.remove('dragging');
+      if (moved) node.dataset.didDrag = 'true';
+      node.removeEventListener('pointermove', move);
+      node.removeEventListener('pointerup', finish);
+      node.removeEventListener('pointercancel', finish);
+      syncRoutes();
+    };
+    node.addEventListener('pointermove', move);
+    node.addEventListener('pointerup', finish);
+    node.addEventListener('pointercancel', finish);
+  });
+});
 $('#menu-toggle').addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('open'));
 
 function network() { const canvas = $('#network-canvas'), ctx = canvas.getContext('2d'); let points = []; function resize(){canvas.width=innerWidth;canvas.height=innerHeight;points=Array.from({length:Math.min(70,Math.round(innerWidth/21))},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18})); syncRoutes();} function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);points.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>canvas.width)p.vx*=-1;if(p.y<0||p.y>canvas.height)p.vy*=-1;ctx.fillStyle='#42e7e1';ctx.fillRect(p.x,p.y,1,1);points.forEach(q=>{const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<100){ctx.strokeStyle=`rgba(66,231,225,${.1*(1-d/100)})`;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}})});requestAnimationFrame(draw);} resize();addEventListener('resize',resize);draw(); } network(); const initialView = location.hash.slice(1); if (['command','flow','audit'].includes(initialView)) showView(initialView, false); addEventListener('popstate', () => showView(location.hash.slice(1) || 'command', false)); loadHealth(); if (state.token) loadDashboard().catch(()=>{});

@@ -106,6 +106,59 @@ export async function getAuditSummary(): Promise<AuditSummary> {
   return rows[0] ?? { total: 0, processing: 0, simulated: 0, created: 0, failed: 0 };
 }
 
+export type StoredOlistOAuthCredentials = {
+  encrypted_payload: string;
+  iv: string;
+  auth_tag: string;
+  access_expires_at: string | null;
+  refresh_expires_at: string | null;
+};
+
+export async function storeOlistOAuthState(stateHash: string, expiresAt: Date) {
+  const sql = client();
+  await sql`DELETE FROM olist_oauth_states WHERE expires_at < now()`;
+  await sql`
+    INSERT INTO olist_oauth_states (state_hash, expires_at)
+    VALUES (${stateHash}, ${expiresAt.toISOString()})
+    ON CONFLICT (state_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at`;
+}
+
+export async function consumeOlistOAuthState(stateHash: string): Promise<boolean> {
+  const sql = client();
+  const rows = await sql`
+    DELETE FROM olist_oauth_states
+    WHERE state_hash = ${stateHash} AND expires_at > now()
+    RETURNING state_hash`;
+  return rows.length === 1;
+}
+
+export async function saveOlistOAuthCredentials(data: { encryptedPayload: string; iv: string; authTag: string; accessExpiresAt: Date | null; refreshExpiresAt: Date | null }) {
+  const sql = client();
+  await sql`
+    INSERT INTO olist_oauth_credentials (
+      account_key, encrypted_payload, iv, auth_tag, access_expires_at, refresh_expires_at
+    ) VALUES (
+      'default', ${data.encryptedPayload}, ${data.iv}, ${data.authTag},
+      ${data.accessExpiresAt?.toISOString() ?? null}, ${data.refreshExpiresAt?.toISOString() ?? null}
+    ) ON CONFLICT (account_key) DO UPDATE SET
+      encrypted_payload = EXCLUDED.encrypted_payload,
+      iv = EXCLUDED.iv,
+      auth_tag = EXCLUDED.auth_tag,
+      access_expires_at = EXCLUDED.access_expires_at,
+      refresh_expires_at = EXCLUDED.refresh_expires_at,
+      updated_at = now()`;
+}
+
+export async function getOlistOAuthCredentials(): Promise<StoredOlistOAuthCredentials | null> {
+  const sql = client();
+  const rows = (await sql`
+    SELECT encrypted_payload, iv, auth_tag, access_expires_at, refresh_expires_at
+    FROM olist_oauth_credentials
+    WHERE account_key = 'default'
+    LIMIT 1`) as unknown as StoredOlistOAuthCredentials[];
+  return rows[0] ?? null;
+}
+
 export async function cleanupOldOrders(cutoff: Date): Promise<number> {
   const sql = client();
   const rows = await sql`DELETE FROM automation_orders WHERE created_at < ${cutoff.toISOString()} RETURNING id`;

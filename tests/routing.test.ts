@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { routeSku, RoutingError } from '../src/routing.js';
+import { orderSchema } from '../src/schemas.js';
 
-describe('routeSku', () => {
-  it('roteia SKU da empresa A', () => {
-    expect(routeSku('MIL-A-001').company.key).toBe('a');
+describe('manual Olist order input', () => {
+  it('aceita a entrada manual mínima da API Olist v3', () => {
+    const input = orderSchema.parse({
+      externalOrderNumber: 'MAN-001',
+      contactId: 101,
+      warehouseId: 202,
+      productId: 303,
+      quantity: 2,
+      unitPrice: 19.9,
+      orderDate: '2026-09-22',
+    });
+    expect(input.productId).toBe(303);
   });
 
-  it('roteia SKU da empresa B sem considerar caixa', () => {
-    expect(routeSku('mil-b-001').company.key).toBe('b');
-  });
-
-  it('rejeita SKU sem regra', () => {
-    expect(() => routeSku('OUTRO-001')).toThrow(RoutingError);
+  it('rejeita pedido sem IDs Olist obrigatórios', () => {
+    expect(() => orderSchema.parse({ externalOrderNumber: 'MAN-001', quantity: 1, unitPrice: 10 })).toThrow();
   });
 });

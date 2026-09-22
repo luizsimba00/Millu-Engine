@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { cleanupOldOrders, getAuditOrder, getAuditSummary, listAuditOrders } from './db.js';
+import { completeOlistAuthorization, createOlistAuthorizationUrl, getOlistOAuthStatus } from './oauth.js';
 import { processOrder } from './order-service.js';
 import { RoutingError } from './routing.js';
 import { orderSchema } from './schemas.js';
@@ -24,6 +25,29 @@ app.use(express.json({ limit: '100kb', verify: (req, _res, buffer) => { (req as 
 
 const healthResponse = () => ({ status: 'ok', service: 'millu-engine', mode: config.simulateOlist ? 'simulation' : 'olist-live' });
 app.get('/api/health', (_req, res) => res.status(200).json(healthResponse()));
+
+const protectedOlistRoute = [inMemoryRateLimit(10), requireBearer(() => config.pocApiKey)];
+app.post('/api/olist/login', ...protectedOlistRoute, async (_req, res, next) => {
+  try {
+    return res.status(200).json({ authorizationUrl: await createOlistAuthorizationUrl() });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/olist/callback', async (req, res, next) => {
+  try {
+    const code = typeof req.query.code === 'string' ? req.query.code : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    if (!code || !state || typeof req.query.error === 'string') return res.status(400).send('A autorização Olist foi cancelada ou está inválida.');
+    await completeOlistAuthorization(code, state);
+    return res.redirect('/?olist=connected');
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/olist/status', ...protectedOlistRoute, async (_req, res, next) => {
+  try {
+    return res.status(200).json(await getOlistOAuthStatus());
+  } catch (error) { return next(error); }
+});
 
 const protectedAuditRoute = [inMemoryRateLimit(60), requireBearer(() => config.pocApiKey)];
 app.get('/api/audit/summary', ...protectedAuditRoute, async (_req, res, next) => {
