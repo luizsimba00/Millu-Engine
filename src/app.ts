@@ -1,10 +1,5 @@
-import express, { type NextFunction, type Request, type Response } from 'express';
+import express, { type NextFunction, type Request, type RequestHandler, type Response } from 'express';
 import * as helmetModule from 'helmet';
-import type { RequestHandler } from 'express';
-
-// O builder da Vercel pode resolver Helmet como CommonJS; normalize o export ESM/CJS.
-const helmet = (helmetModule as unknown as { default?: (options?: unknown) => RequestHandler }).default
-  ?? (helmetModule as unknown as (options?: unknown) => RequestHandler);
 import { config } from './config.js';
 import { cleanupOldOrders } from './db.js';
 import { processOrder } from './order-service.js';
@@ -12,13 +7,19 @@ import { RoutingError } from './routing.js';
 import { orderSchema } from './schemas.js';
 import { inMemoryRateLimit, requireBearer, verifyWebhookSignature } from './security.js';
 
+// O builder da Vercel pode resolver Helmet como CommonJS; normalize o export ESM/CJS.
+const helmet = (helmetModule as unknown as { default?: (options?: unknown) => RequestHandler }).default
+  ?? (helmetModule as unknown as (options?: unknown) => RequestHandler);
+
 export const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 app.use(express.json({ limit: '100kb', verify: (req, _res, buffer) => { (req as Request & { rawBody?: Buffer }).rawBody = buffer; } }));
 
-app.get('/api/health', (_req, res) => res.status(200).json({ status: 'ok', service: 'millu-engine', mode: config.simulateOlist ? 'simulation' : 'olist-live' }));
+const healthResponse = () => ({ status: 'ok', service: 'millu-engine', mode: config.simulateOlist ? 'simulation' : 'olist-live' });
+app.get('/', (_req, res) => res.status(200).json(healthResponse()));
+app.get('/api/health', (_req, res) => res.status(200).json(healthResponse()));
 
 const protectedOrderRoute = [inMemoryRateLimit(20), requireBearer(() => config.pocApiKey)];
 app.post('/api/orders', ...protectedOrderRoute, async (req, res, next) => {
@@ -62,3 +63,5 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error(JSON.stringify({ level: 'error', event: 'request_failed', type: error instanceof Error ? error.constructor.name : 'unknown' }));
   return res.status(502).json({ error: 'Não foi possível processar o pedido. Tente novamente.' });
 });
+
+export default app;
