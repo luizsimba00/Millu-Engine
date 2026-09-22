@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111f" />
+  <title>Millu Engine | Central de Operações</title>
+  <link rel="stylesheet" href="/styles.css?v=5" />
+  <style>
+    /* Salvaguarda contra artefatos de composição em alguns navegadores. */
+    .metric-card { background: #0d2034 !important; animation: none !important; transform: none !important; }
+    .metric-card::before, .metric-card::after { display: none !important; content: none !important; }
+  </style>
+</head>
+<body>
+  <canvas id="network-canvas" aria-hidden="true"></canvas>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#command"><span class="brand-mark">M</span><span>MILLU <b>ENGINE</b></span></a>
+      <nav aria-label="Navegação principal">
+        <a class="nav-item active" href="#command" data-nav="command"><span>◈</span> Central</a>
+        <a class="nav-item" href="#flow" data-nav="flow"><span>⌘</span> Fluxo</a>
+        <a class="nav-item" href="#audit" data-nav="audit"><span>◫</span> Auditoria</a>
+      </nav>
+      <div class="sidebar-footer"><span class="signal"></span><span id="system-status">Conectando</span><small>OLIST ROUTING NODE</small></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button id="menu-toggle" class="icon-button" aria-label="Abrir menu">☰</button>
+        <div class="breadcrumb"><span>OPERATIONS</span><i>/</i><strong id="section-title">CENTRAL</strong></div>
+        <div class="mode-pill"><span class="pulse"></span><span id="mode-label">VERIFICANDO</span></div>
+      </header>
+
+      <section id="command" class="view active-view">
+        <div class="hero">
+          <div><p class="eyebrow">MILLU ENGINE / v0.1</p><h1>Orquestração que<br><em>não perde o sinal.</em></h1><p class="intro">Acompanhe o roteamento de cada pedido entre a origem, a regra de SKU e a operação Olist.</p></div>
+          <div class="token-box"><label for="api-token">CHAVE DE OPERAÇÃO</label><div class="token-input"><input id="api-token" type="password" autocomplete="off" placeholder="POC_API_KEY" /><button id="token-toggle" aria-label="Mostrar chave">◉</button></div><button id="connect" class="outline-button">CONECTAR PAINEL</button><small>A chave permanece somente neste navegador.</small></div>
+        </div>
+        <div class="metric-grid" id="metrics">
+          <article class="metric-card"><span>TOTAL PROCESSADO</span><strong>—</strong><small>Pedidos auditáveis</small></article>
+          <article class="metric-card"><span>EM PROCESSAMENTO</span><strong>—</strong><small>Aguardando resposta</small></article>
+          <article class="metric-card accent"><span>SIMULAÇÕES</span><strong>—</strong><small>Modo seguro</small></article>
+          <article class="metric-card danger"><span>FALHAS</span><strong>—</strong><small>Requerem revisão</small></article>
+        </div>
+        <section class="quick-actions"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>Navegue pelo sistema</h2></div><div class="action-grid"><a href="#flow" class="action-card"><span>01</span><b>Mapa do fluxo</b><small>Veja os nós de roteamento</small><i>→</i></a><a href="#audit" class="action-card"><span>02</span><b>Auditar pedidos</b><small>Inspecione cada execução</small><i>→</i></a></div></section>
+      </section>
+
+      <section id="flow" class="view">
+        <div class="section-heading"><p class="eyebrow">ROTEAMENTO INTELIGENTE</p><h2>Topologia operacional</h2><p>O Router consulta a Tray e direciona cada pedido ao canal Olist correspondente.</p></div>
+        <div class="flow-map" id="flow-map">
+          <div class="scan-beam" aria-hidden="true"></div>
+          <span class="signal-orbit orbit-1" aria-hidden="true"></span><span class="signal-orbit orbit-2" aria-hidden="true"></span><span class="signal-orbit orbit-3" aria-hidden="true"></span>
+          <svg class="network-routes" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="route-cyan" x1="0" x2="1"><stop stop-color="#42e7e1"/><stop offset="1" stop-color="#a98bff"/></linearGradient><linearGradient id="route-green" x1="0" x2="1"><stop stop-color="#a98bff"/><stop offset="1" stop-color="#78e3a5"/></linearGradient></defs>
+            <path id="route-in" d="M225 252 L400 228"/><path id="route-a" d="M620 235 L700 130"/><path id="route-b" d="M620 250 L700 360"/><path id="route-olist" d="M508 280 L508 350"/>
+            <path class="route route-in" d="M225 252 L400 228"/><path class="route route-a" d="M620 235 L700 130"/><path class="route route-b" d="M620 250 L700 360"/><path class="route route-olist" d="M508 280 L508 350"/>
+          </svg>
+          <button class="flow-node origin selected" data-filter=""><span class="node-icon">▣</span><b>Tray</b><small>Consulta de pedido</small></button>
+          <button class="flow-node routing" data-filter="processing"><span class="node-icon">◇</span><b>Router</b><small>Decisão de roteamento</small></button>
+          <button class="flow-node company-a" data-filter="simulated"><span class="node-icon">M</span><b>Olist Millu</b><small>Canal de destino</small></button>
+          <button class="flow-node company-b" data-filter="created"><span class="node-icon">S</span><b>Olist Spot</b><small>Canal de destino</small></button>
+          <button class="flow-node olist" data-filter=""><span class="node-icon">A</span><b>Olist Agr</b><small>Canal de destino</small></button>
+        </div>
+        <div class="flow-legend"><span><i class="dot cyan"></i> Consulta Tray</span><span><i class="dot violet"></i> Decisão do Router</span><span><i class="dot green"></i> Canais Olist</span></div>
+      </section>
+
+      <section id="audit" class="view">
+        <div class="section-heading audit-heading"><div><p class="eyebrow">TRILHA DE EXECUÇÃO</p><h2>Auditoria de pedidos</h2><p>Registros operacionais sem dados pessoais, com rastreabilidade de cada decisão.</p></div><button id="refresh" class="outline-button">↻ ATUALIZAR</button></div>
+        <div class="audit-toolbar"><div class="search"><span>⌕</span><input id="search" placeholder="Buscar por pedido ou SKU" /></div><div class="filters" id="filters"><button class="filter active" data-status="">Todos</button><button class="filter" data-status="processing">Processando</button><button class="filter" data-status="simulated">Simulados</button><button class="filter" data-status="created">Criados</button><button class="filter" data-status="failed">Falhas</button></div></div>
+        <div class="audit-layout"><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Status</th><th>Rota</th><th>Olist</th><th>Processado</th><th></th></tr></thead><tbody id="orders-body"><tr class="empty"><td colspan="6">Conecte o painel para carregar a auditoria.</td></tr></tbody></table></div><aside class="detail-panel" id="detail-panel"><p class="eyebrow">INSPEÇÃO</p><div class="detail-empty">Selecione um pedido<br>para visualizar a trilha.</div></aside></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" role="status"></div>
+  <script type="module" src="/app.js?v=2"></script>
+</body>
+</html>
